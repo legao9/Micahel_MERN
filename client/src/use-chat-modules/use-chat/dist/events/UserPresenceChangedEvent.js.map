@@ -1,0 +1,1 @@
+{"version":3,"file":"UserPresenceChangedEvent.js","sourceRoot":"","sources":["../../src/events/UserPresenceChangedEvent.ts"],"names":[],"mappings":";;;AAAA,oCAAyC;AAUzC,MAAa,wBAAwB;IAMnC,YAAY,EAAE,MAAM,EAAE,QAAQ,EAA4B;QAJjD,SAAI,GAAG,qBAAa,CAAC,mBAAmB,CAAC;QAKhD,IAAI,CAAC,MAAM,GAAG,MAAM,CAAC;QACrB,IAAI,CAAC,QAAQ,GAAG,QAAQ,CAAC;IAC3B,CAAC;CACF;AAVD,4DAUC"}

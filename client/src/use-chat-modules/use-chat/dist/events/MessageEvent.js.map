@@ -1,0 +1,1 @@
+{"version":3,"file":"MessageEvent.js","sourceRoot":"","sources":["../../src/events/MessageEvent.ts"],"names":[],"mappings":";;;AAAA,oCAA6D;AAU7D,MAAa,YAAY;IAKvB,YAAY,EACV,OAAO,EACP,cAAc,GACyB;QAPhC,SAAI,GAAG,qBAAa,CAAC,OAAO,CAAC;QAQpC,IAAI,CAAC,OAAO,GAAG,OAAO,CAAC;QACvB,IAAI,CAAC,cAAc,GAAG,cAAc,CAAC;IACvC,CAAC;CACF;AAZD,oCAYC"}
