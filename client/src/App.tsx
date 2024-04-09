@@ -36,9 +36,9 @@ const messageIdGenerator = (message: ChatMessage<MessageContentType>) => nanoid(
 const groupIdGenerator = () => nanoid();
 
 const akaneStorage = new BasicStorage({ groupIdGenerator, messageIdGenerator });
-const eliotStorage = new BasicStorage({ groupIdGenerator, messageIdGenerator });
-const emilyStorage = new BasicStorage({ groupIdGenerator, messageIdGenerator });
-const joeStorage = new BasicStorage({ groupIdGenerator, messageIdGenerator });
+// const eliotStorage = new BasicStorage({ groupIdGenerator, messageIdGenerator });
+// const emilyStorage = new BasicStorage({ groupIdGenerator, messageIdGenerator });
+// const joeStorage = new BasicStorage({ groupIdGenerator, messageIdGenerator });
 
 // Create serviceFactory
 const serviceFactory = (storage: IStorage, updateState: UpdateState) => {
@@ -55,14 +55,14 @@ const serviceFactory = (storage: IStorage, updateState: UpdateState) => {
 //     avatar: akaneModel.avatar,
 //     bio: ""
 // });
-const MichaelFranlin = new User({
-    id: '15',
+const testUserModel = new User({
+    id: '1',
     presence: new Presence({ status: UserStatus.Available, description: "" }),
     firstName: "",
     lastName: "",
-    username: 'USER-15',
-    email: "ZalmyFranklin@login",
-    avatar: akaneModel.avatar,
+    username: 'test Admin',
+    email: "admin@test.com",
+    avatar: 'https://chatscope.io/storybook/react/assets/zoe-E7ZdmXF0.svg',
     bio: ""
 });
 
@@ -131,16 +131,19 @@ const cookies = new Cookies();
 
 const authToken = cookies.get("token");
 
+
+
 function App() {
     useEffect(() => {
-        const getTestMessages = async () => {
-            const URL = 'http://localhost:5000/chat';
-            const { data: { res } } = await axios.post(`${URL}/getTestMessages`,
-                { id: '15' });
-            console.log('res Axios : ',res);
-
-        }
-        getTestMessages();
+        // const getTestMessages = async () => {
+        //     const URL = 'http://localhost:5000/chat';
+        //     const { data: { res } } = await axios.post(`${URL}/getTestMessages`,
+        //         { id: '1' });
+        //     // console.log('res Axios : ',res);
+        //     return res;
+        // }
+        // getTestMessages();
+        // console.log('testStorage:', testStorage,akaneStorage);
     }, []);
 
     // if (!authToken) return <Auth />;
@@ -148,13 +151,13 @@ function App() {
 
     return (
         <div
-        //   style={{
-        //     position: "absolute",
-        //     width: "100%",
-        //     height: "100%",
-        //     transform: "translateX(0%)",
-        //     opacity: "1",
-        //   }}
+          style={{
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            transform: "translateX(0%)",
+            opacity: "1",
+          }}
         >
 
 
@@ -164,7 +167,7 @@ function App() {
                 debounceTyping: true,
                 autoDraft: AutoDraft.Save | AutoDraft.Restore
             }}>
-                <Chat user={MichaelFranlin} />
+                <Chat user={testUserModel} />
             </ChatProvider>
 
 

@@ -6,26 +6,13 @@ const setupSshTunnel = require('./tunnelSetup');
 
 require("dotenv").config();
 
-const dbHost = process.env.DB_HOST;
-const dbHostUser = process.env.DB_HOST_USER;
-const dbHostPass = process.env.DB_HOST_PASS;
-const dbUser = process.env.DB_USER;
-const dbPass = process.env.DB_PASS;
+// const dbHost = process.env.DB_HOST;
+// const dbHostUser = process.env.DB_HOST_USER;
+// const dbHostPass = process.env.DB_HOST_PASS;
+// const dbUser = process.env.DB_USER;
+// const dbPass = process.env.DB_PASS;
 
-
-
-
-
-// const pool = mysql.createPool({
-//     host: '127.0.0.1',
-//     user: dbUser, 
-//     password: dbPass, 
-//     database: 'mysql' 
-//   });
-
-
-console.log(process.env.DB_USER, "\n", process.env.DB_PASSWORD)
-
+console.log(process.env.DB_USER, process.env.DB_HOST, process.env.DB_PASSWORD)
 // Function to initialize the database connection
 const initializeDbConnection = async () => {
     await setupSshTunnel(); // Setup SSH tunnel
@@ -34,7 +21,10 @@ const initializeDbConnection = async () => {
         port: 3333, // Local port where the SSH tunnel is established
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
-        database: 'EIMS3'
+        database: 'EIMS3',
+        waitForConnections: true, // Helpful for managing connection timeouts
+        connectionLimit: 10, // Adjust as needed
+        queueLimit: 0 // No limit on queued requests
     });
 };
 
@@ -122,22 +112,28 @@ const model = {
     getAgentNameById: async (keyId) => {
         const query = 'SELECT name FROM agents WHERE agent_id = ?';
         const [rows] = await pool.query(query, [agentId]);
-        console.log(rows,345345);
+        console.log(rows[0],345345);
         return rows[0]?.name;
     },
 
-    // John Barry work. Fetches the messages from the tbRecvRcd_20240402 table
-    getTestMessages: async (keyId) => {
-        console.log(
-            'MODEL:getTestMessages:'
-        );
-        const pool = await poolPromise;
-        const query = 'SELECT idxUserId, idxSupplierId, sender, receiver, recvTm, sms, ipAddr FROM tbRecvRcd_20240402 WHERE idxSupplierId = ? ORDER BY RecvTM DESC LIMIT 15';
-        const [rows] = await pool.query(query,[keyId]);
-        // console.log(rows);
-        return rows.length > 0 ? rows : null;
-    },
 
+    getTestMessages: async (keyId) => {
+        try {
+            const pool = await poolPromise;
+            const query = 'SELECT idxUserId, sender, recvTm, sms FROM tbRecvRcd_20240402 WHERE idxUserId = ? ORDER BY recvTm DESC LIMIT 15';
+            const [rows, fields] = await pool.query(query, [keyId]);
+    
+            if (rows && rows.length > 0) {
+                console.log('model.res.length:', rows.length);
+                return rows;
+            } else {
+                return null;
+            }
+        } catch (error) {
+            console.error('Error in getTestMessages:', error);
+            return null;
+        }
+    }
 
 
 };
