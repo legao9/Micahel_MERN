@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useEffect, useState } from "react";
-
+import config from "../config/config";
 import { MainContainer, Sidebar, ConversationList, Conversation, Avatar, ChatContainer, ConversationHeader, MessageGroup, Message, MessageList, MessageInput, TypingIndicator, Button, Search } from "@chatscope/chat-ui-kit-react";
 import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -11,26 +11,38 @@ import {
   MessageDirection,
   MessageStatus
 } from "@chatscope/use-chat";
+import axios from "axios";
 import { MessageContent, TextContent, User } from "@chatscope/use-chat";
-import { on } from "events";
+import Spinner from "./spinner";
+// import { on } from "events";
+// import { io, Socket } from "socket.io-client";
 
 export const Chat = ({ user }: { user: User }) => {
 
-  // Get all chat related values and methods from useChat hook 
+  interface tmpMsg {
+    keyId:number;
+    idxUserId: number;
+    sender: string;
+    receiver: string;
+    recvTm: string;
+    sms: string;
+    portNum: number;
+    hasGet: number;
+  }
+  interface tmpMsgCollection {
+    [sender: string]: tmpMsg[];
+  }
+  const cookies = new Cookies();
+  const id = cookies.get('id');
+  const [showSpinner, setShowSpinner] = useState(false);
+  const [arrBySender, setArrBySender] = useState<tmpMsgCollection>({});
+  const [nowMessages, setNowMessages] = useState<tmpMsg[]>([]);
   const {
     currentMessages, conversations, activeConversation, setActiveConversation, sendMessage, getUser, currentMessage, setCurrentMessage,
     sendTyping, setCurrentUser
   } = useChat();
 
-  interface tmpMsg {
-    idxUserId: number;
-    sender: string;
-    recvTm: string;
-    sms: string;
-  }
-  interface tmpMsgCollection {
-    [sender: string]: tmpMsg[];
-  }
+
 
   const rearrangeBySender = (arr: tmpMsg[]): tmpMsgCollection => {
     let result: tmpMsgCollection = {};
@@ -40,139 +52,74 @@ export const Chat = ({ user }: { user: User }) => {
       }
       result[item.sender].push(item);
     });
-
+    for (let key in result) {
+      result[key].reverse();
+    }
     return result;
   };
+  // const tmp = rearrangeBySender(testStorage);
+  // const getSelectedUserMessages = async (sender: string) => {
+  //     try {
+  //         const response = await axios.post( config.serverUrl + '/chat/getSelectedUserMessages', { id: cookies.get('id'), sender: sender });
+  //         console.log('Response :', response.data.messages);
+  //         return response.data.message;
+  //     } catch (error) {
+  //         console.error('Error fetching test messages:', error);
+  //         return null; 
+  //     }
+  // };
 
-  const initialTestData: tmpMsg[] = [
-    {
-      "idxUserId": 1,
-      "sender": "128",
-      "recvTm": "2024-04-02T23:34:55.000Z",
-      "sms": "TATE?state=NewAccount;name=19296659705;server=e6.vvm.mstore.msg.t-mobile.com;port=993;pw=oZxgxj8N1G"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "128",
-      "recvTm": "2024-04-02T23:28:28.000Z",
-      "sms": "TATE?state=NewAccount;name=19293955221;server=e6.vvm.mstore.msg.t-mobile.com;port=993;pw=J1eSnEJqql"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "128",
-      "recvTm": "2024-04-02T23:28:27.000Z",
-      "sms": "TATE?state=NewAccount;name=19293955221;server=e6.vvm.mstore.msg.t-mobile.com;port=993;pw=J1eSnEJqql"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "13478569248",
-      "recvTm": "2024-04-02T23:00:46.000Z",
-      "sms": "Hi"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "13478569248",
-      "recvTm": "2024-04-02T22:59:48.000Z",
-      "sms": "Testing"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "13478569248",
-      "recvTm": "2024-04-02T22:59:39.000Z",
-      "sms": "Hi"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "13478569248",
-      "recvTm": "2024-04-02T22:59:01.000Z",
-      "sms": "Hello"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "13478569248",
-      "recvTm": "2024-04-02T22:58:29.000Z",
-      "sms": "Hi"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "12174200595",
-      "recvTm": "2024-04-02T22:42:43.000Z",
-      "sms": "Stop"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "128",
-      "recvTm": "2024-04-02T22:42:27.000Z",
-      "sms": "TATE?state=NewAccount;name=19297097338;server=e6.vvm.mstore.msg.t-mobile.com;port=993;pw=hWUx3K1Iw8"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "128",
-      "recvTm": "2024-04-02T22:42:04.000Z",
-      "sms": "TATE?state=NewAccount;name=19297378325;server=e7.vvm.mstore.msg.t-mobile.com;port=993;pw=mU2tmrS4NS"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "128",
-      "recvTm": "2024-04-02T22:41:49.000Z",
-      "sms": "TATE?state=NotAvailable;"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "128",
-      "recvTm": "2024-04-02T22:39:59.000Z",
-      "sms": "TATE?state=NotAvailable;"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "128",
-      "recvTm": "2024-04-02T22:39:40.000Z",
-      "sms": "TATE?state=NotAvailable;"
-    },
-    {
-      "idxUserId": 1,
-      "sender": "128",
-      "recvTm": "2024-04-02T22:39:12.000Z",
-      "sms": "TATE?state=NotAvailable;"
+  const getUsersAndLastMessages = async () => {
+    try {
+      const response = await axios.post(config.serverUrl + '/chat/getUsersAndLastMessages', { id: cookies.get('id') });
+      const res = response.data.messages;
+      return res;
+    } catch (error) {
+      console.error('Error fetching test messages:', error);
+      return null;
     }
-  ];
+  };
 
+  const showSpinnerLimitSeconds = (seconds: number) => {
+    setShowSpinner(true);
+    setTimeout(() => {
+      setShowSpinner(false);
+    }, seconds * 1000);
+  };
 
-  const [testStorage, setTestStorage] = useState<tmpMsg[]>(initialTestData);
-  const [arrBySender, setarrBySender] = useState<tmpMsgCollection>({});
-  const [selectedUser, setSelectedUser] = useState<string>('');
-  const [nowMessages, setNowMessages] = useState<tmpMsg[]>([]);
-
-  const tmp = rearrangeBySender(testStorage);
-  useEffect(() => {
-    setarrBySender(tmp);
-    // console.log('tmp:', tmp, arrBySender);
-    console.log('selectedUser:', selectedUser);
-  }, [testStorage, selectedUser]);
-
-  const [currentUserAvatar, currentUserName] = useMemo(() => {
-
-    if (activeConversation) {
-      const participant = activeConversation.participants.length > 0 ? activeConversation.participants[0] : undefined;
-
-      if (participant) {
-        const user = getUser(participant.id);
-        if (user) {
-          return [<Avatar src={user.avatar} />, user.username]
-        }
-      }
+  const initialUsersAndLastMessages = async () => {
+    showSpinnerLimitSeconds(7);
+    try {
+      let data = await getUsersAndLastMessages();
+      setShowSpinner(false);
+      // console.log(data);
+      const tmp = await rearrangeBySender(data);
+      // console.log(tmp);
+      setArrBySender(tmp);
+      localStorage.setItem('arrBySender', JSON.stringify(tmp));
+    } catch (error) {
+      console.error('Error fetching data:', error);
     }
+  };
 
-    return [undefined, undefined];
+  // const [currentUserAvatar, currentUserName] = useMemo(() => {
 
-  }, [activeConversation, getUser]);
+  //   if (activeConversation) {
+  //     const participant = activeConversation.participants.length > 0 ? activeConversation.participants[0] : undefined;
+
+  //     if (participant) {
+  //       const user = getUser(participant.id);
+  //       if (user) {
+  //         return [<Avatar src={user.avatar} />, user.username]
+  //       }
+  //     }
+  //   }
+
+  //   return [undefined, undefined];
+
+  // }, [activeConversation, getUser]);
 
   const handleChange = (value: string) => {
-    // setNowMessages(v);
-    // Send typing indicator to the active conversation
-    // You can call this method on each onChange event
-    // because sendTyping method can throttle sending this event
-    // So typing event will not be send to often to the server
     setCurrentMessage(value);
     if (activeConversation) {
       sendTyping({
@@ -187,45 +134,68 @@ export const Chat = ({ user }: { user: User }) => {
   }
 
   const onSelectLeft = (value: any) => {
-    console.log(value);
-    setSelectedUser(value[0].sender);
+    console.log(value.length);
     setNowMessages(value);
-    // setCurrentMessage('value');
-    // if (activeConversation) {
-    //   sendTyping({
-    //     conversationId: activeConversation?.id,
-    //     isTyping: true,
-    //     userId: user.id,
-    //     content: value, // Note! Most often you don't want to send what the user types, as this can violate his privacy!
-    //     throttle: true
-    //   });
-    // }
+  }
+  const sendMsg = async (text: string) => {
+    let lastRow: tmpMsg | null = (nowMessages.length > 0) ? nowMessages[nowMessages.length - 1] : null;
+    if (lastRow)
+      lastRow.sms = text;
+    // console.log('lastRow:', lastRow);
+    const response = await axios.post(config.serverUrl + '/chat/sendMsg', { id, lastRow });
+    console.log('send message response:', response.data.result);
+  };
+
+  const updateArrBySender = (text: string) => {
+    let lastRow: tmpMsg | null = (nowMessages.length > 0) ? nowMessages[nowMessages.length - 1] : null;
+    let newRow: tmpMsg | null = null;
+    const now = new Date();
+
+    const year = now.getUTCFullYear();
+    const month = String(now.getUTCMonth() + 1).padStart(2, '0'); // Month is zero-based
+    const day = String(now.getUTCDate()).padStart(2, '0');
+    const hours = String(now.getUTCHours()).padStart(2, '0');
+    const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+    const currentTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+
+    if (lastRow) {
+      newRow = {keyId:1, idxUserId: id, sender: lastRow.sender, receiver: lastRow.receiver, recvTm: currentTimeString, portNum: lastRow.portNum, sms: text, hasGet: -1 };
+    }
+    console.log('newRow:', newRow);
+    let tmpNowMessages = nowMessages;
+    if (newRow) {
+      tmpNowMessages = [...nowMessages, newRow];
+      setNowMessages(tmpNowMessages);
+    }
   }
 
   const handleSend = (text: string) => {
+    sendMsg(text)
+    updateArrBySender(text)
 
-    const message = new ChatMessage({
-      id: "", // Id will be generated by storage generator, so here you can pass an empty string
-      content: text as unknown as MessageContent<TextContent>,
-      contentType: MessageContentType.TextHtml,
-      senderId: user.id,
-      direction: MessageDirection.Outgoing,
-      status: MessageStatus.Sent
-    });
+    // const message = new ChatMessage({
+    //   id: "", // Id will be generated by storage generator, so here you can pass an empty string
+    //   content: text as unknown as MessageContent<TextContent>,
+    //   contentType: MessageContentType.TextHtml,
+    //   senderId: user.id,
+    //   direction: MessageDirection.Outgoing,
+    //   status: MessageStatus.Sent
+    // });
 
-    if (activeConversation) {
-      sendMessage({
-        message,
-        conversationId: activeConversation.id,
-        senderId: user.id,
-      });
-    }
+    // if (activeConversation) {
+    //   sendMessage({
+    //     message,
+    //     conversationId: activeConversation.id,
+    //     senderId: user.id,
+    //   });
+    // }
 
   };
-  const cookies = new Cookies();
   //Function to handle logout button
   const handleLogout = () => {
     console.log("Logout clicked");
+    cookies.remove("id");
     cookies.remove("token");
     window.location.reload();
   };
@@ -262,6 +232,26 @@ export const Chat = ({ user }: { user: User }) => {
     }, [activeConversation, getUser],
   );
 
+  const UpdateMsgs = async () => {
+    try{
+      let lastMsg = nowMessages.length > 0 ? nowMessages[nowMessages.length - 1] : null;
+      let res = await axios.post(config.serverUrl + '/chat/UpdateMsgs', {id:id,  lastKeyId : lastMsg?.keyId, lastTbNum : lastMsg?.hasGet }) 
+      console.log(2329,res);
+    }catch(err) {
+      console.error('Error in UpdateMsgs:', err);
+    }
+  }
+
+  const intervalUpdate = () => {
+    UpdateMsgs();
+    // setInterval(()=>UpdateMsgs(), 10000); 
+  }
+
+  useEffect(() => {
+    initialUsersAndLastMessages();
+    intervalUpdate();
+  }, []);
+
   return (
     <MainContainer responsive>
       <Sidebar position="left" scrollable>
@@ -297,7 +287,7 @@ export const Chat = ({ user }: { user: User }) => {
                   key={sender}
                   name={name}
                   info={senderData.sms}
-                  className={selectedUser === sender ? 'cs-conversation--active' : ''}
+                  className={(nowMessages.length > 0) && nowMessages[0].sender === sender ? 'cs-conversation--active' : ''}
                   // Additional props can be added here
                   // active={true}
                   // unreadCnt={c.unreadCounter}
@@ -309,118 +299,66 @@ export const Chat = ({ user }: { user: User }) => {
               );
             })
           }
-
-          {/* {conversations.map((c) => {
-            // Helper for getting the data of the first participant
-            const [avatar, name] = (() => {
-              const participant =
-                c.participants.length > 0 ? c.participants[0] : undefined;
-
-              if (participant) {
-                const user = getUser(participant.id);
-                if (user) {
-                  return [<Avatar src={user.avatar} />, user.username];
-                }
-              }
-
-              return [undefined, undefined];
-            })();
-
-            return (
-              <Conversation
-                key={c.id}
-                name={name}
-                info={
-                  c.draft
-                    ? `Draft: ${c.draft
-                      .replace(/<br>/g, "\n")
-                      .replace(/&nbsp;/g, " ")}`
-                    : ``
-                }
-                active={activeConversation?.id === c.id}
-                unreadCnt={c.unreadCounter}
-                onClick={() => setActiveConversation(c.id)}
-              >
-                {avatar}
-              </Conversation>
-            );
-          })} */}
         </ConversationList>
       </Sidebar>
 
       <ChatContainer>
-        {selectedUser && (
+        {nowMessages.length > 0 && (
           <ConversationHeader>
-            {currentUserAvatar}
-            <ConversationHeader.Content userName={selectedUser} />
+            {/* {currentUserAvatar} */}
+            <ConversationHeader.Content userName={nowMessages[0].sender} />
           </ConversationHeader>
         )}
         <MessageList typingIndicator={getTypingIndicator()}>
-          {selectedUser &&
-             Object.keys(nowMessages).map((g, index) => (
-              <MessageGroup key={index} direction="incoming"
-              >
-                <MessageGroup.Messages>
+          <button onClick={UpdateMsgs}>update</button>
+          {nowMessages.length > 0 &&
+            Object.keys(nowMessages).map((g, index) => (
+
+              (nowMessages[index].hasGet === -1) ?
+                <MessageGroup key={index} direction="outgoing" >
                   <MessageGroup.Messages>
-                    <Message
-                      model={{
-                        message: nowMessages[index].sms,
-                        sentTime: "just now",
-                        sender: "Joe",
-                        position: "normal",
-                        direction: "incoming"
-                      }}
-                    />
+                    <MessageGroup.Messages>
+                      <Message
+                        model={{
+                          message: nowMessages[index].sms,
+                          sentTime: "yesterday",
+                          sender: "Joe",
+                          position: "normal",
+                          direction: (nowMessages[index].hasGet === -1) ? "outgoing" : "incoming"
+                        }}
+                      />
+                    </MessageGroup.Messages>
                   </MessageGroup.Messages>
-                </MessageGroup.Messages>
-              </MessageGroup>
+                </MessageGroup>
+                :
+                <MessageGroup key={index} direction="incoming">
+                  <MessageGroup.Messages>
+                    <MessageGroup.Messages>
+                      <Message
+                        model={{
+                          message: nowMessages[index].sms,
+                          sentTime: "yesterday",
+                          sender: "Joe",
+                          position: "normal",
+                          direction: (nowMessages[index].hasGet === -1) ? "outgoing" : "incoming"
+                        }}
+                      />
+                    </MessageGroup.Messages>
+                  </MessageGroup.Messages>
+                </MessageGroup>
+
             ))}
         </MessageList>
         <MessageInput
           value={currentMessage}
           onChange={handleChange}
           onSend={handleSend}
-          disabled={!selectedUser}
+          disabled={!(nowMessages.length > 0)}
           attachButton={false}
           placeholder="Type here..."
         />
       </ChatContainer>
-      {/* <ChatContainer>
-        {activeConversation && (
-          <ConversationHeader>
-            {currentUserAvatar}
-            <ConversationHeader.Content userName='selectedUser' />
-          </ConversationHeader>
-        )}
-        <MessageList typingIndicator={getTypingIndicator()}>
-          {activeConversation &&
-            currentMessages.map((g) => (
-              <MessageGroup key={g.id} direction={g.direction}>
-                <MessageGroup.Messages>
-                  {g.messages.map((m: ChatMessage<MessageContentType>) => (
-                    <Message
-                      key={m.id}
-                      model={{
-                        type: "html",
-                        payload: m.content,
-                        direction: m.direction,
-                        position: "normal",
-                      }}
-                    />
-                  ))}
-                </MessageGroup.Messages>
-              </MessageGroup>
-            ))}
-        </MessageList>
-        <MessageInput
-          value={currentMessage}
-          onChange={handleChange}
-          onSend={handleSend}
-          disabled={!activeConversation}
-          attachButton={false}
-          placeholder="Type here..."
-        />
-      </ChatContainer> */}
+      <Spinner show={showSpinner} />
     </MainContainer>
   );
 

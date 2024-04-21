@@ -15,3 +15,34 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+.fancy-spinner {
+  width: 115px;
+  height: 116px;
+  border-radius: 50%;
+  border: 0px solid transparent;
+  border-top: 7px double #0dcaf0;
+  animation: spin 1s linear infinite;
+}
+
+.fancy-spinner-container {
+  background: #000000a9;
+  z-index: 3;
+  width: 100vw;
+  position: fixed;
+  height: 100vh;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}

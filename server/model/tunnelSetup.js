@@ -1,5 +1,5 @@
-const createTunnel = require("tunnel-ssh"); // Replace with the actual import
-require("dotenv").config();
+const createTunnel = await import("tunnel-ssh"); // Replace with the actual import
+import "dotenv/config";
 
 // Define tunnel, server, SSH, and forwarding options
 const tunnelOptions = {
@@ -29,7 +29,7 @@ const forwardOptions = {
 };
 
 // Function to set up the SSH tunnel
-const setupSshTunnel = () => {
+export const setupSshTunnel = () => {
   return createTunnel.createTunnel(
     tunnelOptions,
     serverOptions,
@@ -38,4 +38,4 @@ const setupSshTunnel = () => {
   );
 };
 
-module.exports = setupSshTunnel;
+// module.exports = setupSshTunnel;

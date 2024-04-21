@@ -4,12 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "nodemon index.js",
     "dev": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "type": "module",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
@@ -19,6 +20,7 @@
     "mariadb": "^3.2.3",
     "mysql2": "^3.7.1",
     "nodemon": "^3.0.3",
+    "socket.io": "^4.7.5",
     "ssh2": "^1.15.0",
     "tunnel-ssh": "^5.1.2"
   }

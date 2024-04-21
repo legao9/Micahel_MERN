@@ -1,57 +1,51 @@
-const express = require('express');
-const cors = require('cors');
-
-const authRoutes = require("./routes/auth.js");
-const chatRoutes = require('./routes/chatRoutes.js');
-const agentRoutes = require('./routes/AgentInfo.js')
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { Server } from "socket.io";
+// import { VerifyToken, VerifySocketToken } from "./middlewares/VerifyToken.js";
+import {router as authRoutes} from "./routes/auth.js";
+import {router as chatRoutes} from "./routes/chatRoutes.js";
+import {router as agentRoutes} from "./routes/AgentInfo.js" 
 
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-require("dotenv").config();
-
-
+dotenv.config();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded());
+app.use(express.urlencoded({ extended: false }));
 
 
-// const model = require('./model/model.js');
-
-// async function testGetUserByKeyId() {
-//     try {
-//         const userData = await model.getUserByKeyId(2);
-//         console.log('User Data:', userData);
-//     } catch (error) {
-//         console.error('Error fetching user data:', error);
-//     }
-// }
-// async function getTestMessages(idxUserId) {
-//     console.log(idxUserId);
-//     try {
-//         const userData = await model.getTestMessages(idxUserId);
-//         console.log('data of RecvRcd_20240402:', userData);
-//     } catch (error) {
-//         console.error('Error fetching message history:', error);
-//     }
-// }
-
-// testGetUserByKeyId();
-// getTestMessages(15)
-
-// app.use("/getMessage/id", (req, res) => {
-//     console.log(req.params);
-//     const id = req.params.id;
-//     const messages = model.getTestMessages(id);
-//     res.json({ messages });
-// });
+const PORT = process.env.PORT || 5000;
 
 app.use('/auth', authRoutes);
 app.use('/chat', chatRoutes);
 app.use('/agent', agentRoutes);
 
+const server = app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
 
+// const io = new Server(server, {
+//   cors: {
+//     origin: "http://localhost:3000",
+//     // credentials: true,
+//   },
+// });
 
+// var socketUsers = [];
+// io.on("connection", (socket) => {
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+//   socket.on("disconnect", (socket) => {
+//     console.log("A user disconnected");
+//     socketUsers = socketUsers.filter(user => user.socketId == socket.id);
+//     console.log('All users count: ', socketUsers.length);
+//   });
+
+//   socket.on("newConnect", (data) => {
+//     socketUsers.push({socketId:socket.id, idxUserId : data.idxUserId});
+//     console.log("New client: ", data);
+//     console.log('All users count: ', socketUsers.length);
+//   });
+
+// });

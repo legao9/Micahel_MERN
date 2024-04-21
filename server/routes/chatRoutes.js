@@ -1,10 +1,10 @@
-const express = require("express");
-const router = express.Router();
-const { Messages,getTestMessages } = require("../controllers/Messages");
+const express =  await import  ("express");
+export const router = express.Router();
+const { Messages,getTestMessages,getUsersAndLastMessages, saveMsg,UpdateMsgs } = await import("../controllers/Messages.js");
 
 // router.get("/getMessage/:token", Messages);
 
-// router.post("/pushMessage/:token")
-router.post("/getTestMessages",getTestMessages);
-
-module.exports = router;
+// router.post("/getTestMessages",getTestMessages);
+router.post("/sendMsg",saveMsg)
+router.post("/getUsersAndLastMessages",getUsersAndLastMessages);
+router.post("/UpdateMsgs",UpdateMsgs);

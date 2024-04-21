@@ -1,141 +1,180 @@
-const mysql = require('mysql2/promise');
-const mariadb = require('mariadb')
-const bcrypt = require('bcrypt');
+import { setupSshTunnel } from './tunnelSetup.js';
+import "dotenv/config";
+import mysql from 'mysql2/promise';
 
-const setupSshTunnel = require('./tunnelSetup');
+let pool; // Declare a variable to hold the database connection pool
 
-require("dotenv").config();
-
-// const dbHost = process.env.DB_HOST;
-// const dbHostUser = process.env.DB_HOST_USER;
-// const dbHostPass = process.env.DB_HOST_PASS;
-// const dbUser = process.env.DB_USER;
-// const dbPass = process.env.DB_PASS;
-
-console.log(process.env.DB_USER, process.env.DB_HOST, process.env.DB_PASSWORD)
-// Function to initialize the database connection
 const initializeDbConnection = async () => {
-    await setupSshTunnel(); // Setup SSH tunnel
-    return mysql.createPool({
-        host: '127.0.0.1',
-        port: 3333, // Local port where the SSH tunnel is established
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: 'EIMS3',
-        waitForConnections: true, // Helpful for managing connection timeouts
-        connectionLimit: 10, // Adjust as needed
-        queueLimit: 0 // No limit on queued requests
-    });
+    if (!pool) {
+        await setupSshTunnel();
+        pool = mysql.createPool({
+            host: '127.0.0.1',
+            port: 3333, // Local port where the SSH tunnel is established
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: 'EIMS3',
+            waitForConnections: true,
+            connectionLimit: 100,
+            queueLimit: 0
+        });
+    }
+    return pool;
 };
+const extractValuesFromArray = async (arr) => {
+    return arr.map(obj => Object.values(obj)[0]);
+}
 
-let poolPromise = initializeDbConnection();
+const model = async () => {
+    let poolPromise = initializeDbConnection();
+    let pool = await poolPromise;
 
-
-// SQL-based model functions
-const model = {
-    // Function to retrieve a user by username
-
-    getUserByKeyId: async (keyId) => {
-        // Directly use `pool` assuming it has been initialized
-        const pool = await poolPromise;
-        const query = 'SELECT keyID, name, password FROM tbUser WHERE keyID = ?';
-        const [rows] = await pool.query(query, [keyId]);
-        return rows.length > 0 ? rows[0] : null;
-    },
-
-    getUserByUsername: async (username) => {
-        const pool = await poolPromise;
-        const [rows] = await poolPromise.query('SELECT * FROM tbUser WHERE username = ?', [username]);
-        console.log('Query result:', rows);
-        return rows[0];
-    },
-
-    //Function to retrieve agent_id or token:
-    getAgentId: async (username) => {
-        const pool = await poolPromise;
-        const [rows] = await pool.query('SELECT keyID FROM tbUser WHERE username = ?', [username]);
-        if (rows.length === 0) {
-            return null; // No agent found with the given identifier
-        }
-        return rows[0].agent_id;
-    },
-
-    // Function to validate user credentials
-    validateCredentials: async (username, password) => {
-        const pool = await poolPromise;
-        const user = await model.getUserByUsername(username);
-        if (!user) {
-            return false; // User not found
-        }
-
-        const validPassword = await bcrypt.compare(password, user.password_hash);
-        console.log(validPassword);
-        return validPassword;
-    },
-
-    // // Function to add a new message
-    // addMessage: async (message, sender, receiver) => {
-    //     const [result] = await pool.query('INSERT INTO Messages (message, sender, receiver, date) VALUES (?, ?, ?, NOW())', [message, sender, receiver]);
-    //     return result.insertId;
-    // },
-
-    // // Function to retrieve messages for a user
-    // getMessagesForUser: async (username) => {
-    //     const [rows] = await pool.query('SELECT * FROM Messages WHERE receiver = ? OR sender = ?', [username, username]);
-    //     return rows;
-    // },
-
-    // //lazy-load messages for a user
-    // getMessagesForUser: async (agentId, limit, offset) => {
-    //     const query = `
-    //         SELECT 
-    //             messages.content as message, 
-    //             messages.timestamp as sentTime,
-    //             messages.message_id as sender,
-    //             messages.direction
-    //         FROM messages 
-    //         INNER JOIN iccid ON messages.iccid = iccid.iccid
-    //         WHERE iccid.agent_id = ? 
-    //         ORDER BY messages.timestamp DESC 
-    //         LIMIT ? OFFSET ?`;
-
-    //     const [rows] = await pool.query(query, [agentId, limit, offset]);
-    //     return rows.map(row => ({
-    //         message: row.message,
-    //         sentTime: row.sentTime,
-    //         sender: row.sender,
-    //         direction: row.direction
-    //     }));
-    // },
-
-    //Get the name of an agent by their ID (eventually by their token)
-    getAgentNameById: async (keyId) => {
-        const query = 'SELECT name FROM agents WHERE agent_id = ?';
-        const [rows] = await pool.query(query, [agentId]);
-        console.log(rows[0],345345);
-        return rows[0]?.name;
-    },
-
-
-    getTestMessages: async (keyId) => {
+    const showTables = async () => {
         try {
-            const pool = await poolPromise;
-            const query = 'SELECT idxUserId, sender, recvTm, sms FROM tbRecvRcd_20240402 WHERE idxUserId = ? ORDER BY recvTm DESC LIMIT 15';
-            const [rows, fields] = await pool.query(query, [keyId]);
-    
-            if (rows && rows.length > 0) {
-                console.log('model.res.length:', rows.length);
-                return rows;
+            const query = `SHOW TABLES LIKE 'tbRecvRcd_202%';`;
+            const [rows] = await pool.query(query);
+            return rows;
+        } catch (error) {
+            console.error('Error in showTables:', error);
+            return null;
+        }
+    };
+
+    const queryJoineAllTables = async (keyId, sender) => {
+        try {
+            let a = await showTables();
+            if (a && a.length > 0) {
+                a = await extractValuesFromArray(a);
+                let subQuery = ``;
+                let andSender = (sender === '1=1') ? '' : `AND sender = ${sender}`;
+                let andReceiver = (sender === '1=1') ? '' : `AND receiver = ${sender}`;
+                if (a.length > 0)
+                    for (let i = 0; i < a.length; i++) {
+                        let tmpUnionClause = (i != a.length - 1) ? ` UNION ALL ` : ``;
+                        subQuery += `
+                            SELECT keyId, sender, receiver, recvTm, portNum, sms, hasGet
+                            FROM ${a[i]}
+                            WHERE idxUserId = ${keyId}
+                            ${andSender}
+                            ${tmpUnionClause}
+                            `
+                        }
+                        
+                        let tmpQuery = `SELECT keyId, sender, receiver, recvTm, portNum, sms, hasGet
+                        FROM (
+                            SELECT keyId, receiver AS sender, sender AS receiver, recvTm, portNum, sms, hasGet
+                            FROM tbChatHistory
+                            WHERE idxUserId = ${keyId}
+                            ${andReceiver}
+                            UNION ALL
+                            ${subQuery}
+                        ) AS all_tables`;
+                // console.log('model-46-Joining...',keyId,sender,tmpQuery);
+                return tmpQuery;
+            } else {
+                return ;
+            }
+        } catch (error) {
+            console.error('Error in joinMessages:', error);
+            return null;
+        }
+    }
+    const fetchMessagesMine = async (keyId) => {
+        console.log('Loading messages of new user...');
+        try {
+            let a = await showTables();
+            if (a && a.length > 0) {
+                a = await extractValuesFromArray(a);
+                let subQuery = ``;
+                if (a.length > 0)
+                    for (let i = 0; i < a.length; i++) {
+                        let tmpUnionClause = (i != a.length - 1) ? ` UNION ALL ` : ``;
+                        subQuery += `
+                            SELECT keyId, sender, receiver, recvTm, portNum, sms, hasGet
+                            FROM ${a[i]}
+                            WHERE idxUserId = ${keyId}
+                            ${tmpUnionClause}
+                        `
+                    }
+
+                let tmpQuery = `SELECT keyId, sender, receiver, recvTm, portNum, sms, hasGet
+                                FROM (
+                                    SELECT keyId, receiver AS sender, sender AS receiver, recvTm, portNum, sms, hasGet
+                                    FROM tbChatHistory
+                                    WHERE idxUserId = ${keyId}
+                                    UNION ALL
+                                    ${subQuery}
+                                ) AS all_tables ORDER BY recvTm DESC`;
+                const [rows] = await pool.query(tmpQuery);
+                if (rows.length > 0) {
+                    console.log(111,rows.length);
+                    return rows;
+                } else {
+                    return null;
+                }
             } else {
                 return null;
             }
         } catch (error) {
-            console.error('Error in getTestMessages:', error);
+            console.error('Error in joinMessages:', error);
             return null;
         }
     }
 
+    return {
+        getUserByKeyId: async (keyId) => {
+            const query = 'SELECT keyID, name, password FROM tbUser WHERE keyID = ?';
+            const [rows] = await pool.query(query, [keyId]);
+            return rows.length > 0 ? rows[0] : null;
+        },
+        getUserByUsername: async (username) => {
+            const query = 'SELECT keyID, name, password FROM tbUser WHERE name = ?';
+            const [rows] = await pool.query(query, [username]);
+            return rows.length > 0 ? rows[0] : null;
+        },
 
+        saveMsg: async (reqBody) => {
+            // console.log(138,reqBody);
+            const query = 'INSERT INTO tbChatHistory (idxUserId, sms, sender, receiver, portNum) VALUES (?, ?, ?, ?, ?)';
+            const [rows] = await pool.query(query, [reqBody.id, reqBody.lastRow.sms, reqBody.lastRow.receiver, reqBody.lastRow.sender, reqBody.lastRow.portNum]); 
+            return rows.insertId;
+            // return null;
+        },
+        // validateCredentials: async (username, password) => {
+        //     const query = 'SELECT keyID, name, password FROM tbUser WHERE name = ? AND password = ?';
+        //     const [rows] = await pool.query(query, [username, password]);
+        //     console.log('cvalidate-credentials', rows);
+        //     return rows.length > 0 ? true : false;
+        // },
+
+        getUsersAndLastMessages: async (keyId) => {
+            try {
+                let a = await fetchMessagesMine(keyId);
+                if (a && a.length > 0) {
+                    console.log('model-88:', a[0]);
+                    return a;
+                } else {
+                    return null;
+                }
+
+            } catch (error) {
+                console.error('Error in getTestMessages:', error);
+                return null;
+            }
+        },
+
+        UpdateMsgs: async (data) => {
+            console.log('model-163:Updating messages...',data);
+            try{
+                let tmpQuery = await queryJoineAllTables(data.id, '1=1');
+                // tmpQuery = tmpQuery.replace(/\n/g, '') + ` WHERE (recvTm > '2024-04-10 21:30:55' OR (recvTm = '2024-04-10 21:30:55' AND keyId > ${lastKeyId}))
+                // ORDER BY recvTm, keyId`;
+                
+            } catch (error) {
+                console.error('Error in saveMessage:', error);
+                return null;        
+            }
+        },
+    };
 };
 
-module.exports = model;
+export default model;

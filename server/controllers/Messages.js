@@ -1,6 +1,6 @@
-const model = require('../model/model.js');
+import model from '../model/model.js';
 
-const Messages = async (req, res) => {
+export const Messages = async (req, res) => {
     try {
         const agentId = req.query.token;
         const page = parseInt(req.query.page) || 1;
@@ -12,7 +12,6 @@ const Messages = async (req, res) => {
         res.status(200).json({
             currentPage: page,
             messages: messages,
-            // Optionally include totalMessages, hasNextPage, etc.
         });
     } catch (error) {
         console.error('Error fetching messages:', error);
@@ -20,21 +19,34 @@ const Messages = async (req, res) => {
     }
 };
 
-// const getTestMessages = async (req, res) => {
-//     const id = req.body.id;
-//     console.log('Messges.js-10:',id);
-//     const messages = await model.getTestMessages(id);
-//     // console.log(messages);
-//     res.json({ messages });
-// }
-const getTestMessages = async (req, res) => {
-    const id = req.body.id;
-    console.log('Messges.js, id:', id);
 
+// export const getTestMessages = async (req, res) => {
+//     const id = req.body.id;
+//     console.log('new request id:', id);    
+//     try {
+//         const modelInstance = await model(); // Call model as a function to get the object
+//         const messages = await modelInstance.getTestMessages(id); // Use the object to access getTestMessages
+//         if (messages) {
+//             res.json({ messages });
+//         } else {
+//             res.status(500).json({ error: "Failed to retrieve messages" });
+//         }
+//     } catch (error) {
+//         if (error.code === 'PROTOCOL_CONNECTION_LOST') {
+//             console.error('Error: Connection lost. Reconnecting...');
+//         } else {
+//             console.error('Error in getTestMessages:', error);
+//             res.status(500).json({ error: "An error occurred while retrieving messages" });
+//         }
+//     }
+// }
+export const getUsersAndLastMessages = async (req, res) => {
+    const id = req.body.id;
+    console.log('new request id:', id);    
     try {
-        const messages = await model.getTestMessages(id);
+        const modelInstance = await model(); // Call model as a function to get the object
+        const messages = await modelInstance.getUsersAndLastMessages(id); // Use the object to access getTestMessages
         if (messages) {
-            console.log('model---:', messages.length); // This is the array of messages        
             res.json({ messages });
         } else {
             res.status(500).json({ error: "Failed to retrieve messages" });
@@ -42,15 +54,60 @@ const getTestMessages = async (req, res) => {
     } catch (error) {
         if (error.code === 'PROTOCOL_CONNECTION_LOST') {
             console.error('Error: Connection lost. Reconnecting...');
-            // You can handle reconnection logic here or try re-executing the query.
-            // You may need to re-establish the connection to the MySQL server.
         } else {
-            console.error('Error in getTestMessages:', error);
-            res.status(500).json({ error: "An error occurred while retrieving messages" });
+            console.error('Error in getUsersAndLastMessages:', error);
+            res.status(500).json({ error: "An error occurred while retrieving getUsersAndLastMessages" });
         }
     }
 }
 
-module.exports = {Messages};
-module.exports = {getTestMessages};
+// export const getSelectedUserMessages = async (req, res) => {
+//     const id = req.body.id;
+//     const sender = req.body.sender;
+//     console.log('/getSelectedUserMessages (id/sender):', id,sender);    
+//     try {
+//         const modelInstance = await model(); // Call model as a function to get the object
+//         const messages = await modelInstance.getSelectedUserMessages(id,sender); // Use the object to access getTestMessages
+//         if(messages == null) return ;
+//         if (messages.length > 0) {
+//             res.json({ messages });
+//         } else {
+//             res.status(500).json({ error: "Failed to retrieve messages" });
+//         }
+//     } catch (error) {
+//         if (error.code === 'PROTOCOL_CONNECTION_LOST') {
+//             console.error('Error: Connection lost. Reconnecting...');
+//         } else {
+//             console.error('Error in getUsersAndLastMessages:', error);
+//             res.status(500).json({ error: "An error occurred while retrieving getUsersAndLastMessages" });
+//         }
+//     }
+// }
+export const saveMsg = async (req, res) => {
+    const reqBody = req.body;
+    // const sender = req.body.sender;
+    // const receiver = req.body.receiver;
+    // const direction = req.body.direction;
+    // const id = req.body.id;
+    try {
+        const modelInstance = await model(); // Call model as a function to get the object
+        const result = await modelInstance.saveMsg(reqBody); // Use the object to access addMessage
+        res.json({ result });
+    } catch (error) {
+        console.error('Error in saveMessage:', error);
+        res.status(500).json({ error: "An error occurred while saving the message" });
+    }
+}
+
+export const UpdateMsgs = async (req, res) => {
+    const reqBody = req.body;
+    try {
+        const modelInstance = await model(); // Call model as a function to get the object
+        const result = await modelInstance.UpdateMsgs(reqBody); // Use the object to access addMessage
+        res.json({ result });
+    } catch (error) {
+        console.error('Error in saveMessage:', error);
+        res.status(500).json({ error: "An error occurred while updating the messages" });
+    }
+}
 

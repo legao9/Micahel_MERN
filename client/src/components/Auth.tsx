@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import Cookies from 'universal-cookie';
 import axios from 'axios';
-
+import config from '../config/config.js';
 import signinImage from '../assets/signup.jpg';
 
 const cookies = new Cookies();
 
 export const Auth = () => {
     const [form, setForm] = useState({ username: '', password: '' });
+    const [msg, setMsg] = useState('');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -16,15 +17,16 @@ export const Auth = () => {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const { username, password } = form;
-        const URL = 'http://localhost:5000/auth';
-        const { data: { token} } = await axios.post(`${URL}/login`,
+        const URL = config.serverUrl;
+        const { data: {message ,token} } = await axios.post(`${URL}/auth/login`,
          { username, password });
-
-        cookies.set('token', token);
+        setMsg(message);
+        console.log(token);
+        cookies.set('id', token.keyID);
+        cookies.set('token', token.password);
         cookies.set('username', username);
-     
-
-        window.location.reload();
+        if(token.keyID > 0)
+            window.location.reload();
     }
 
     return (
@@ -53,6 +55,7 @@ export const Auth = () => {
                                 required
                             />
                         </div>
+                        <p>{msg}</p>
                         <div className="auth__form-container_fields-content_button">
                             <button>Sign In</button>
                         </div>

@@ -1,9 +1,9 @@
-const express = require('express');
-const router = express.Router();
+const express = await import('express');
+export const router = express.Router();
 
-const {getUserInfo} = require('../controllers/getUserInfo');
+const {getUserInfo} = await import('../controllers/getUserInfo.js');
 
 
 router.get('/:token', getUserInfo);
 
-module.exports =(router);
+// module.exports =(router);

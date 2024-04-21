@@ -1,6 +1,7 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import './App.css';
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
+import config from "./config/config";
 import {
     BasicStorage,
     ChatMessage,
@@ -26,14 +27,11 @@ import { akaneModel, eliotModel, emilyModel, joeModel, users } from "./data/data
 import { AutoDraft } from "@chatscope/use-chat/dist/enums/AutoDraft";
 import Cookies from "universal-cookie";
 import { useEffect } from "react";
-import axios from "axios";          
+import axios from "axios";
 
-// sendMessage and addMessage methods can automatically generate id for messages and groups
-// This allows you to omit doing this manually, but you need to provide a message generator
-// The message id generator is a function that receives message and returns id for this message
-// The group id generator is a function that returns string
 const messageIdGenerator = (message: ChatMessage<MessageContentType>) => nanoid();
 const groupIdGenerator = () => nanoid();
+const cookies = new Cookies();
 
 const akaneStorage = new BasicStorage({ groupIdGenerator, messageIdGenerator });
 // const eliotStorage = new BasicStorage({ groupIdGenerator, messageIdGenerator });
@@ -60,93 +58,80 @@ const testUserModel = new User({
     presence: new Presence({ status: UserStatus.Available, description: "" }),
     firstName: "",
     lastName: "",
-    username: 'test Admin',
+    username: cookies.get('username'),
     email: "admin@test.com",
     avatar: 'https://chatscope.io/storybook/react/assets/zoe-E7ZdmXF0.svg',
     bio: ""
 });
 
 
-const chats = [
-    { name: "Akane", storage: akaneStorage },
-];
+// const chats = [
+//     { name: "Akane", storage: akaneStorage },
+// ];
 
-function createConversation(id: ConversationId, name: string): Conversation {
-    return new Conversation({
-        id,
-        participants: [
-            new Participant({
-                id: name,
-                role: new ConversationRole([])
-            })
-        ],
-        unreadCounter: 0,
-        typingUsers: new TypingUsersList({ items: [] }),
-        draft: ""
-    });
-}
+// function createConversation(id: ConversationId, name: string): Conversation {
+//     return new Conversation({
+//         id,
+//         participants: [
+//             new Participant({
+//                 id: name,
+//                 role: new ConversationRole([])
+//             })
+//         ],
+//         unreadCounter: 0,
+//         typingUsers: new TypingUsersList({ items: [] }),
+//         draft: ""
+//     });
+// }
 
 // Add users and conversations to the states
-chats.forEach(c => {
+// chats.forEach(c => {
 
-    users.forEach(u => {
-        if (u.name !== c.name) {
-            c.storage.addUser(new User({
-                id: u.name,
-                presence: new Presence({ status: UserStatus.Available, description: "" }),
-                firstName: "",
-                lastName: "",
-                username: u.name,
-                email: "",
-                avatar: u.avatar,
-                bio: ""
-            }));
+//     users.forEach(u => {
+//         if (u.name !== c.name) {
+//             c.storage.addUser(new User({
+//                 id: u.name,
+//                 presence: new Presence({ status: UserStatus.Available, description: "" }),
+//                 firstName: "",
+//                 lastName: "",
+//                 username: u.name,
+//                 email: "",
+//                 avatar: u.avatar,
+//                 bio: ""
+//             }));
 
-            const conversationId = nanoid();
+//             const conversationId = nanoid();
 
-            const myConversation = c.storage.getState().conversations.find(cv => typeof cv.participants.find(p => p.id === u.name) !== "undefined");
-            if (!myConversation) {
+//             const myConversation = c.storage.getState().conversations.find(cv => typeof cv.participants.find(p => p.id === u.name) !== "undefined");
+//             if (!myConversation) {
 
-                c.storage.addConversation(createConversation(conversationId, u.name));
+//                 c.storage.addConversation(createConversation(conversationId, u.name));
 
-                const chat = chats.find(chat => chat.name === u.name);
+//                 const chat = chats.find(chat => chat.name === u.name);
 
-                if (chat) {
+//                 if (chat) {
 
-                    const hisConversation = chat.storage.getState().conversations.find(cv => typeof cv.participants.find(p => p.id === c.name) !== "undefined");
-                    if (!hisConversation) {
-                        chat.storage.addConversation(createConversation(conversationId, c.name));
-                    }
+//                     const hisConversation = chat.storage.getState().conversations.find(cv => typeof cv.participants.find(p => p.id === c.name) !== "undefined");
+//                     if (!hisConversation) {
+//                         chat.storage.addConversation(createConversation(conversationId, c.name));
+//                     }
 
-                }
+//                 }
 
-            }
+//             }
 
-        }
-    });
+//         }
+//     });
 
-});
+// });
 
-const cookies = new Cookies();
 
-const authToken = cookies.get("token");
-
+const authToken = cookies.get("id");
 
 
 function App() {
-    useEffect(() => {
-        // const getTestMessages = async () => {
-        //     const URL = 'http://localhost:5000/chat';
-        //     const { data: { res } } = await axios.post(`${URL}/getTestMessages`,
-        //         { id: '1' });
-        //     // console.log('res Axios : ',res);
-        //     return res;
-        // }
-        // getTestMessages();
-        // console.log('testStorage:', testStorage,akaneStorage);
-    }, []);
 
-    // if (!authToken) return <Auth />;
+    if (!authToken) return <Auth />;
 
 
     return (
