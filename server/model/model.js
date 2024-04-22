@@ -133,12 +133,23 @@ const model = async () => {
         },
 
         saveMsg: async (reqBody) => {
-            // console.log(138,reqBody);
-            const query = 'INSERT INTO tbChatHistory (idxUserId, sms, sender, receiver, portNum) VALUES (?, ?, ?, ?, ?)';
-            const [rows] = await pool.query(query, [reqBody.id, reqBody.lastRow.sms, reqBody.lastRow.receiver, reqBody.lastRow.sender, reqBody.lastRow.portNum]); 
-            return rows.insertId;
-            // return null;
-        },
+            const insertQuery = 'INSERT INTO tbChatHistory (idxUserId, sms, sender, receiver, portNum) VALUES (?, ?, ?, ?, ?)';
+            try {
+              const [insertResults] = await pool.query(insertQuery, [reqBody.id, reqBody.lastRow.sms, reqBody.lastRow.sender, reqBody.lastRow.receiver, reqBody.lastRow.portNum]);
+          
+              // Get the inserted row ID
+              const insertedRowId = insertResults.insertId;
+          
+              const selectQuery = 'SELECT * FROM tbChatHistory WHERE keyId = ?';
+              const [selectRows] = await pool.query(selectQuery, [insertedRowId]);
+          
+              // Return the fetched data
+              return selectRows;
+            } catch (error) {
+              console.error('Error inserting or fetching data:', error);
+              return null;
+            }
+          },
         // validateCredentials: async (username, password) => {
         //     const query = 'SELECT keyID, name, password FROM tbUser WHERE name = ? AND password = ?';
         //     const [rows] = await pool.query(query, [username, password]);

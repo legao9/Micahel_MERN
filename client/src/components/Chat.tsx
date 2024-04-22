@@ -21,7 +21,7 @@ export const Chat = ({ user }: { user: User }) => {
 
   interface tmpMsg {
     keyId:number;
-    idxUserId: number;
+    // idxUserId: number;
     sender: string;
     receiver: string;
     recvTm: string;
@@ -37,6 +37,7 @@ export const Chat = ({ user }: { user: User }) => {
   const [showSpinner, setShowSpinner] = useState(false);
   const [arrBySender, setArrBySender] = useState<tmpMsgCollection>({});
   const [nowMessages, setNowMessages] = useState<tmpMsg[]>([]);
+  const [selSender, setSelSender] = useState<string>('');
   const {
     currentMessages, conversations, activeConversation, setActiveConversation, sendMessage, getUser, currentMessage, setCurrentMessage,
     sendTyping, setCurrentUser
@@ -96,7 +97,6 @@ export const Chat = ({ user }: { user: User }) => {
       const tmp = await rearrangeBySender(data);
       // console.log(tmp);
       setArrBySender(tmp);
-      localStorage.setItem('arrBySender', JSON.stringify(tmp));
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -134,14 +134,18 @@ export const Chat = ({ user }: { user: User }) => {
   }
 
   const onSelectLeft = (value: any) => {
-    console.log(value.length);
+    console.log(value);
     setNowMessages(value);
   }
   const sendMsg = async (text: string) => {
-    let lastRow: tmpMsg | null = (nowMessages.length > 0) ? nowMessages[nowMessages.length - 1] : null;
-    if (lastRow)
+    // console.log(140, nowMessages);    
+    let nMsgs = nowMessages; 
+    let lastRow: tmpMsg | null = (nMsgs.length > 0) ? nMsgs[nMsgs.length - 1] : null;
+    if (lastRow){
       lastRow.sms = text;
-    // console.log('lastRow:', lastRow);
+      lastRow.hasGet = -1;
+    }
+    // console.log(lastRow);
     const response = await axios.post(config.serverUrl + '/chat/sendMsg', { id, lastRow });
     console.log('send message response:', response.data.result);
   };
@@ -160,18 +164,24 @@ export const Chat = ({ user }: { user: User }) => {
     const currentTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 
     if (lastRow) {
-      newRow = {keyId:1, idxUserId: id, sender: lastRow.sender, receiver: lastRow.receiver, recvTm: currentTimeString, portNum: lastRow.portNum, sms: text, hasGet: -1 };
+      newRow = {keyId:1, sender: lastRow.sender, receiver: lastRow.receiver, recvTm: currentTimeString, portNum: lastRow.portNum, sms: text, hasGet: -1 };
     }
-    console.log('newRow:', newRow);
+    console.log(arrBySender[`${lastRow?.sender}`], 101, nowMessages);
+    
+
     let tmpNowMessages = nowMessages;
     if (newRow) {
       tmpNowMessages = [...nowMessages, newRow];
-      setNowMessages(tmpNowMessages);
+      console.log('newRow:', tmpNowMessages);
+      let tmpArrBySender = arrBySender;
+      tmpArrBySender[`${newRow?.sender}`] = tmpNowMessages;
+      setArrBySender(tmpArrBySender);
+      onSelectLeft(tmpNowMessages);
     }
   }
 
   const handleSend = (text: string) => {
-    sendMsg(text)
+    // sendMsg(text)
     updateArrBySender(text)
 
     // const message = new ChatMessage({
@@ -249,7 +259,7 @@ export const Chat = ({ user }: { user: User }) => {
 
   useEffect(() => {
     initialUsersAndLastMessages();
-    intervalUpdate();
+    // intervalUpdate();
   }, []);
 
   return (
@@ -310,7 +320,7 @@ export const Chat = ({ user }: { user: User }) => {
           </ConversationHeader>
         )}
         <MessageList typingIndicator={getTypingIndicator()}>
-          <button onClick={UpdateMsgs}>update</button>
+          {/* <button onClick={UpdateMsgs}>update</button> */}
           {nowMessages.length > 0 &&
             Object.keys(nowMessages).map((g, index) => (
 
