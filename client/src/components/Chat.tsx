@@ -187,8 +187,8 @@ export const Chat = ({ user }: { user: User }) => {
       else{
         alert('Message not saved');
       }
-      setShowSpinner(false);
     }
+    setShowSpinner(false);
   }
 
   const handleSend = (text: string) => {
