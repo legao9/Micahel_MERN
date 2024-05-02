@@ -46,3 +46,8 @@ body {
     transform: rotate(360deg);
   }
 }
+
+.cs-message-list__scroll-wrapper{
+  display: flex!important;
+  flex-direction: column-reverse!important;
+}

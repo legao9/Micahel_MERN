@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect, useState } from "react";
+import { useMemo, useEffect, useState } from "react";
 import config from "../config/config";
 import { MainContainer, Sidebar, ConversationList, Conversation, Avatar, ChatContainer, ConversationHeader, MessageGroup, Message, MessageList, MessageInput, TypingIndicator, Button, Search } from "@chatscope/chat-ui-kit-react";
 import { faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
@@ -6,22 +6,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Cookies from 'universal-cookie'
 import {
   useChat,
-  ChatMessage,
-  MessageContentType,
-  MessageDirection,
-  MessageStatus
 } from "@chatscope/use-chat";
 import axios from "axios";
-import { MessageContent, TextContent, User } from "@chatscope/use-chat";
+import {  User } from "@chatscope/use-chat";
 import Spinner from "./spinner";
-// import { on } from "events";
-// import { io, Socket } from "socket.io-client";
 
 export const Chat = ({ user }: { user: User }) => {
-
   interface tmpMsg {
-    keyId:number;
-    // idxUserId: number;
+    keyId: number;
     sender: string;
     receiver: string;
     recvTm: string;
@@ -34,6 +26,7 @@ export const Chat = ({ user }: { user: User }) => {
   }
   const cookies = new Cookies();
   const id = cookies.get('id');
+  const [initialRows, setInitialRows] = useState<tmpMsg[]>([]);
   const [showSpinner, setShowSpinner] = useState(false);
   const [arrBySender, setArrBySender] = useState<tmpMsgCollection>({});
   const [nowMessages, setNowMessages] = useState<tmpMsg[]>([]);
@@ -48,27 +41,18 @@ export const Chat = ({ user }: { user: User }) => {
   const rearrangeBySender = (arr: tmpMsg[]): tmpMsgCollection => {
     let result: tmpMsgCollection = {};
     arr.forEach((item: tmpMsg) => {
+
+
       if (!result[item.sender]) {
         result[item.sender] = [];
       }
       result[item.sender].push(item);
+
+
+
     });
-    for (let key in result) {
-      result[key].reverse();
-    }
     return result;
   };
-  // const tmp = rearrangeBySender(testStorage);
-  // const getSelectedUserMessages = async (sender: string) => {
-  //     try {
-  //         const response = await axios.post( config.serverUrl + '/chat/getSelectedUserMessages', { id: cookies.get('id'), sender: sender });
-  //         console.log('Response :', response.data.messages);
-  //         return response.data.message;
-  //     } catch (error) {
-  //         console.error('Error fetching test messages:', error);
-  //         return null; 
-  //     }
-  // };
 
   const getUsersAndLastMessages = async () => {
     try {
@@ -81,43 +65,41 @@ export const Chat = ({ user }: { user: User }) => {
     }
   };
 
-  const showSpinnerLimitSeconds = (seconds: number) => {
+  const showSpinnerLimitSeconds = (seconds: any) => {
     setShowSpinner(true);
     setTimeout(() => {
       setShowSpinner(false);
     }, seconds * 1000);
   };
 
-  const initialUsersAndLastMessages = async () => {
-    showSpinnerLimitSeconds(7);
+  const initializeMessages = async () => {
+    showSpinnerLimitSeconds(10);
     try {
       let data = await getUsersAndLastMessages();
-      setShowSpinner(false);
-      // console.log(data);
-      const tmp = await rearrangeBySender(data);
-      // console.log(tmp);
+      setShowSpinner(false); // console.log(data);
+      setInitialRows(data)
+      localStorage.setItem('totalLength', data.length);
+      const tmp = await rearrangeBySender(data); //console.log(tmp);
       setArrBySender(tmp);
     } catch (error) {
       console.error('Error fetching data:', error);
     }
   };
 
-  // const [currentUserAvatar, currentUserName] = useMemo(() => {
+  const orderByRecentSender = (obj: { [key: string]: tmpMsg[] }) => {
+    let tmpArrShow: { key: string; recvTm: string }[] = [];
+    Object.keys(obj).forEach((key) => {
+      tmpArrShow.push({ key, recvTm: obj[key][0]['recvTm'] });
+    });
+    tmpArrShow.sort((a, b) => new Date(b.recvTm).getTime() - new Date(a.recvTm).getTime());
 
-  //   if (activeConversation) {
-  //     const participant = activeConversation.participants.length > 0 ? activeConversation.participants[0] : undefined;
-
-  //     if (participant) {
-  //       const user = getUser(participant.id);
-  //       if (user) {
-  //         return [<Avatar src={user.avatar} />, user.username]
-  //       }
-  //     }
-  //   }
-
-  //   return [undefined, undefined];
-
-  // }, [activeConversation, getUser]);
+    let res: string[] = [];
+    tmpArrShow.forEach((item) => {
+      res.push(item.key);
+    });
+    // console.log(res);
+    return res;
+  };
 
   const handleChange = (value: string) => {
     setCurrentMessage(value);
@@ -134,33 +116,22 @@ export const Chat = ({ user }: { user: User }) => {
   }
 
   const onSelectLeft = (value: any) => {
-    console.log('onSlectLeft started!',value);
+    console.log('User selected!', value);
     setNowMessages(value);
   }
   const sendMsg = async (lastRow: tmpMsg) => {
-    console.log('sendMsg started! 141',lastRow);    
-    // let tmpNowSomeMessages = nowMessages; 
-    // let lastRow: tmpMsg | null = (tmpNowSomeMessages.length > 0) ? tmpNowSomeMessages[tmpNowSomeMessages.length - 1] : null;
-    // console.log(lastRow,143);
-    
-    // if (lastRow){
-    //   lastRow.sms = text;
-    //   lastRow.hasGet = -1;
-    //   console.log(lastRow);
-    // }
+    console.log('sending message!', lastRow);
     const response = await axios.post(config.serverUrl + '/chat/sendMsg', { id, lastRow });
-    console.log('send message response:', response.data.result);
+    console.log('saved message response:', response.data.result);
     if (response.data.result[0].keyId > 0) return true;
     else return false;
-    
   };
 
   const updateArrBySender = async (text: string) => {
-    setShowSpinner(true);
+    showSpinnerLimitSeconds(7);
     let lastRow: tmpMsg | null = (nowMessages.length > 0) ? nowMessages[nowMessages.length - 1] : null;
     let newRow: tmpMsg | null = null;
     const now = new Date();
-
     const year = now.getUTCFullYear();
     const month = String(now.getUTCMonth() + 1).padStart(2, '0'); // Month is zero-based
     const day = String(now.getUTCDate()).padStart(2, '0');
@@ -169,23 +140,32 @@ export const Chat = ({ user }: { user: User }) => {
     const seconds = String(now.getUTCSeconds()).padStart(2, '0');
     const currentTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 
-    if (lastRow) {
-      newRow = {keyId:1, sender: lastRow.sender, receiver: lastRow.receiver, recvTm: currentTimeString, portNum: lastRow.portNum, sms: text, hasGet: -1 };
+    if (lastRow?.hasGet === 0) {
+      newRow = { keyId: 1, sender: lastRow.receiver, receiver: lastRow.sender, recvTm: currentTimeString, portNum: lastRow.portNum, sms: text, hasGet: -1 };
     }
-    console.log(arrBySender[`${lastRow?.sender}`], 101, nowMessages);
-    
-
-    let tmpNowMessages = nowMessages;
+    if (lastRow?.hasGet === -1) {
+      newRow = { keyId: 1, sender: lastRow.sender, receiver: lastRow.receiver, recvTm: currentTimeString, portNum: lastRow.portNum, sms: text, hasGet: -1 };
+    }
     if (newRow) {
-      tmpNowMessages = [...nowMessages, newRow];
-      console.log('newRow:', tmpNowMessages);
-      let tmpArrBySender = arrBySender;
-      tmpArrBySender[`${newRow?.sender}`] = tmpNowMessages;
-      setArrBySender(tmpArrBySender);
       let isSaved = await sendMsg(newRow);
-      if (isSaved) onSelectLeft(tmpNowMessages);
-      else{
-        alert('Message not saved');
+      if (isSaved) {
+        let tmpInitRows: tmpMsg[] = initialRows;
+        let tmpArrRows: tmpMsg[] = [newRow, ...tmpInitRows];
+        setInitialRows(tmpArrRows);        // set now messages
+        let tmpNowMessages: tmpMsg[] = nowMessages;
+        tmpNowMessages = [newRow, ...tmpNowMessages];      // console.log('newNow Msgs:', tmpNowMessages.length);
+        let tmpArrBySender = arrBySender;
+        if (newRow.hasGet === 0) {
+          tmpArrBySender[`${newRow?.sender}`] = tmpNowMessages;
+        }
+        else if (newRow.hasGet === -1) {
+          tmpArrBySender[`${newRow?.receiver}`] = tmpNowMessages;
+        }
+        setArrBySender(tmpArrBySender);
+        setNowMessages(tmpNowMessages);
+      }
+      else {
+        alert('Message not sent');
       }
     }
     setShowSpinner(false);
@@ -193,25 +173,6 @@ export const Chat = ({ user }: { user: User }) => {
 
   const handleSend = (text: string) => {
     updateArrBySender(text)
-    // sendMsg(text)
-
-    // const message = new ChatMessage({
-    //   id: "", // Id will be generated by storage generator, so here you can pass an empty string
-    //   content: text as unknown as MessageContent<TextContent>,
-    //   contentType: MessageContentType.TextHtml,
-    //   senderId: user.id,
-    //   direction: MessageDirection.Outgoing,
-    //   status: MessageStatus.Sent
-    // });
-
-    // if (activeConversation) {
-    //   sendMessage({
-    //     message,
-    //     conversationId: activeConversation.id,
-    //     senderId: user.id,
-    //   });
-    // }
-
   };
   //Function to handle logout button
   const handleLogout = () => {
@@ -221,56 +182,31 @@ export const Chat = ({ user }: { user: User }) => {
     window.location.reload();
   };
 
-  const getTypingIndicator = useCallback(
-    () => {
-
-      if (activeConversation) {
-
-        const typingUsers = activeConversation.typingUsers;
-
-        if (typingUsers.length > 0) {
-
-          const typingUserId = typingUsers.items[0].userId;
-
-          // Check if typing user participates in the conversation
-          if (activeConversation.participantExists(typingUserId)) {
-
-            const typingUser = getUser(typingUserId);
-
-            if (typingUser) {
-              return <TypingIndicator content={`${typingUser.username} is typing`} />
-            }
-
-          }
-
-        }
-
-      }
-
-
-      return undefined;
-
-    }, [activeConversation, getUser],
-  );
-
   const UpdateMsgs = async () => {
-    try{
-      let lastMsg = nowMessages.length > 0 ? nowMessages[nowMessages.length - 1] : null;
-      let res = await axios.post(config.serverUrl + '/chat/UpdateMsgs', {id:id,  lastKeyId : lastMsg?.keyId, lastTbNum : lastMsg?.hasGet }) 
-      console.log(2329,res);
-    }catch(err) {
-      console.error('Error in UpdateMsgs:', err);
+    let data = await getUsersAndLastMessages();
+    let totalLength = parseInt(localStorage.getItem('totalLength')!);
+    console.log('updated msg cnt : original msg count = ', data.length, ':', totalLength);
+    if (data.length > totalLength) {
+      setInitialRows(data)
+      const tmp = await rearrangeBySender(data);
+      localStorage.setItem('totalLength', data.length);
+      setArrBySender(tmp);
     }
   }
 
-  const intervalUpdate = () => {
-    UpdateMsgs();
-    // setInterval(()=>UpdateMsgs(), 10000); 
+  const intervalUpdate = (sec: number) => {
+    setInterval(() => {
+      // console.log('UpdateMsgs started!');
+      UpdateMsgs();
+    }, sec * 1000);
   }
 
+  const [updating, setupdating] = useState<any>();
   useEffect(() => {
-    initialUsersAndLastMessages();
-    // intervalUpdate();
+    initializeMessages();
+    setTimeout(() => {
+      setupdating(intervalUpdate(20));
+    }, 30000);
   }, []);
 
   return (
@@ -294,7 +230,8 @@ export const Chat = ({ user }: { user: User }) => {
         <ConversationList>
 
           {
-            Object.keys(arrBySender).map((sender: string) => {
+            orderByRecentSender(arrBySender).length > 0 &&
+            orderByRecentSender(arrBySender).map((sender: string) => {
               const senderMessages: tmpMsg[] = arrBySender[sender];
               const senderData: tmpMsg = senderMessages[0]; // Assuming there is at least one message for each sender
 
@@ -309,10 +246,6 @@ export const Chat = ({ user }: { user: User }) => {
                   name={name}
                   info={senderData.sms}
                   className={(nowMessages.length > 0) && nowMessages[0].sender === sender ? 'cs-conversation--active' : ''}
-                  // Additional props can be added here
-                  // active={true}
-                  // unreadCnt={c.unreadCounter}
-                  // className="cs-conversation--active"
                   onClick={() => onSelectLeft(senderMessages)}
                 >
                   {avatar}
@@ -326,15 +259,12 @@ export const Chat = ({ user }: { user: User }) => {
       <ChatContainer>
         {nowMessages.length > 0 && (
           <ConversationHeader>
-            {/* {currentUserAvatar} */}
-            <ConversationHeader.Content userName={nowMessages[0].sender} />
+            <ConversationHeader.Content userName={nowMessages[0].hasGet === 0 ? nowMessages[0].receiver : nowMessages[0].sender} />
           </ConversationHeader>
         )}
-        <MessageList typingIndicator={getTypingIndicator()}>
-          {/* <button onClick={UpdateMsgs}>update</button> */}
+        <MessageList>
           {nowMessages.length > 0 &&
             Object.keys(nowMessages).map((g, index) => (
-
               (nowMessages[index].hasGet === -1) ?
                 <MessageGroup key={index} direction="outgoing" >
                   <MessageGroup.Messages>
@@ -342,7 +272,7 @@ export const Chat = ({ user }: { user: User }) => {
                       <Message
                         model={{
                           message: nowMessages[index].sms,
-                          sentTime: "yesterday",
+                          sentTime: nowMessages[index].recvTm,
                           sender: "Joe",
                           position: "normal",
                           direction: (nowMessages[index].hasGet === -1) ? "outgoing" : "incoming"
@@ -358,7 +288,7 @@ export const Chat = ({ user }: { user: User }) => {
                       <Message
                         model={{
                           message: nowMessages[index].sms,
-                          sentTime: "yesterday",
+                          sentTime: nowMessages[index].recvTm,
                           sender: "Joe",
                           position: "normal",
                           direction: (nowMessages[index].hasGet === -1) ? "outgoing" : "incoming"
