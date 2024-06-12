@@ -329,7 +329,7 @@ export const Chat = ({ user }: { user: User }) => {
       };
     }
 
-    console.log(lastRow.hasGet + "  lastRow ---- : ----- newROw  "+ newRow );
+    // console.log(lastRow.hasGet + "  lastRow ---- : ----- newROw  "+ newRow );
     if (newRow) {
       {
         const updatedNowMessages = [newRow, ...nowMessages];
@@ -353,6 +353,8 @@ export const Chat = ({ user }: { user: User }) => {
         });
       }
       let isSaved = await sendMsg(newRow);
+      console.log("Message sent:", isSaved);
+      
     }
     setShowSpinner(false);
   };
