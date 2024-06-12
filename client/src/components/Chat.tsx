@@ -252,14 +252,13 @@ export const Chat = ({ user }: { user: User }) => {
 
   const getSelectedUserNumber = (value: any) => {
     let lastRow: tmpMsg  = value[0] ;
-    let displayNumber: string = lastRow.hasGet == 0? lastRow.sender : lastRow.receiver;
+    let displayNumber: string = lastRow.hasGet != -1? lastRow.sender : lastRow.receiver;
     console.log(displayNumber + "SELECTED!!!!!!!!!!!!");
     return displayNumber;
   }
 
   //function to send messages
   const sendMsg = async (lastRow: tmpMsg) => {
-    console.log("sendMsg------------------------------------- : ",lastRow);
     
     if (lastRow) {
       const data = {
@@ -289,11 +288,8 @@ export const Chat = ({ user }: { user: User }) => {
   };
 
   const updateArrBySender = async (text: string) => {
-    showSpinnerLimitSeconds(7);
-
-    let lastRow: tmpMsg | null =
-      nowMessages.length > 0 ? nowMessages[nowMessages.length - 1] : null;
-
+    
+    let lastRow: tmpMsg = nowMessages[nowMessages.length - 1] ;
     let newRow: tmpMsg | null = null;
     const now = new Date();
     const year = now.getUTCFullYear();
@@ -304,7 +300,10 @@ export const Chat = ({ user }: { user: User }) => {
     const seconds = String(now.getUTCSeconds()).padStart(2, "0");
     const currentTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 
-    if (lastRow?.hasGet == 0) {
+    console.log(currentTimeString, lastRow); 
+    
+
+    if (lastRow?.hasGet != -1) {
       newRow = {
         keyId: 1,
         sender: lastRow.receiver,
@@ -328,22 +327,17 @@ export const Chat = ({ user }: { user: User }) => {
         displayNumber: formatPhoneNumber(lastRow.sender),
         isRead: 0,
       };
-    } else {
-      return;
     }
 
+    console.log(lastRow.hasGet + "  lastRow ---- : ----- newROw  "+ newRow );
     if (newRow) {
-      let isSaved = await sendMsg(newRow);
-      if (isSaved) {
-        // Ensure displayNumber is updated correctly before updating state
+      {
         const updatedNowMessages = [newRow, ...nowMessages];
         console.log("Updated nowMessages state before backend confirmation:", updatedNowMessages);
-
         let updatedInitRows = [newRow, ...initialRows];
         setInitialRows(updatedInitRows);
         console.log("Updated initialRows state after backend confirmation:", updatedInitRows);
 
-        // Update arrBySender state
         setArrBySender((prevArrBySender) => {
           let updatedArrBySender = { ...prevArrBySender };
           if (newRow!.hasGet === 0) {
@@ -351,18 +345,14 @@ export const Chat = ({ user }: { user: User }) => {
           } else if (newRow!.hasGet === -1) {
             updatedArrBySender[newRow!.receiver] = updatedNowMessages;
           }
-          // console.log("Updated arrBySender state after backend confirmation:", updatedArrBySender);
           return updatedArrBySender;
         });
-
-        // Force re-render by updating state with a new reference
         setNowMessages((prevMessages) => {
           console.log("Forcing re-render with nowMessages state:", prevMessages);
           return [...updatedNowMessages];
         });
-      } else {
-        alert("Message not sent");
       }
+      let isSaved = await sendMsg(newRow);
     }
     setShowSpinner(false);
   };
@@ -385,12 +375,12 @@ export const Chat = ({ user }: { user: User }) => {
     let data = await getUsersAndLastMessages();
     let totalLength = parseInt(localStorage.getItem("totalLength")!);
     console.log("All msg cnt : original msg count = ", data.length, ":", totalLength + " : " + new Date().toLocaleString());
-    // if (data.length > totalLength) {
+    if (data.length > totalLength) {
       setInitialRows(data);
       const tmp = await rearrangeBySender(data);
       localStorage.setItem("totalLength", data.length);
       setArrBySender(tmp);
-    // }
+    }
   };
 
   const a =  useInterval(async () => await UpdateMsgs(), 20000);
